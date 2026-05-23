@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Discord AI Labs Watcher — 測試台</title>
+  <style>
+    :root {
+      --bg: #1e1f22;
+      --panel: #2b2d31;
+      --text: #dbdee1;
+      --muted: #949ba4;
+      --accent: #5865f2;
+      --warn: #f0b232;
+      --danger: #ed4245;
+      --ok: #57f287;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
+    .sub { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    button.secondary { background: var(--panel); border: 1px solid #3f4147; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+    section { margin-bottom: 2rem; }
+    h2 { font-size: 1rem; color: var(--muted); margin-bottom: 0.75rem; }
+    .card {
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      border: 1px solid #3f4147;
+    }
+    .card h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; }
+    .meta.warn { color: var(--warn); }
+    .meta.danger { color: var(--danger); }
+    pre.discord-preview {
+      background: #313338;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.85rem;
+      margin: 0.5rem 0;
+      border-left: 3px solid var(--accent);
+    }
+    .error { color: var(--danger); }
+    .empty { color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+  <h1>Discord AI Labs Watcher</h1>
+  <p class="sub">本機測試台 — 預覽與實際 Discord webhook 相同的 <code>content</code></p>
+
+  <div class="toolbar">
+    <button type="button" id="btnPreview">預覽（不寫入 DB）</button>
+    <button type="button" id="btnDryRun" class="secondary">執行 Dry Run</button>
+    <button type="button" id="btnRun">執行並發送</button>
+    <button type="button" id="btnTestWebhook" class="secondary">Webhook 連線測試</button>
+  </div>
+  <p class="status" id="status">就緒</p>
+
+  <section>
+    <h2>將發送到 Discord（<span id="sendCount">0</span>）</h2>
+    <div id="wouldSend"></div>
+  </section>
+
+  <section>
+    <h2>已過濾（<span id="filteredCount">0</span>）</h2>
+    <div id="filtered"></div>
+  </section>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(msg, isError) {
+      $("status").textContent = msg;
+      $("status").className = isError ? "status error" : "status";
+    }
+
+    function renderPreview(data) {
+      const sendEl = $("wouldSend");
+      const filtEl = $("filtered");
+      sendEl.innerHTML = "";
+      filtEl.innerHTML = "";
+
+      $("sendCount").textContent = data.wouldSend?.length ?? 0;
+      $("filteredCount").textContent = data.filtered?.length ?? 0;
+
+      if (!data.wouldSend?.length) {
+        sendEl.innerHTML = '<p class="empty">無符合條件的新文章</p>';
+      }
+
+      (data.wouldSend || []).forEach((item, i) => {
+        const len = item.content.length;
+        const over = len > 2000;
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${escapeHtml(item.article.title)}</h3>
+          <div class="meta">${escapeHtml(item.article.source)} · ${len} 字元${over ? ' · <span class="danger">超過 2000 字元</span>' : ""}</div>
+          <pre class="discord-preview">${escapeHtml(item.content)}</pre>
+          <button type="button" class="secondary btn-copy">複製 content</button>
+          <button type="button" class="secondary btn-send-one">發送此則</button>
+        `;
+        card.querySelector(".btn-copy").onclick = () => {
+          navigator.clipboard.writeText(item.content);
+          setStatus("已複製到剪貼簿");
+        };
+        card.querySelector(".btn-send-one").onclick = async () => {
+          await postSend({ url: item.article.url });
+        };
+        sendEl.appendChild(card);
+      });
+
+      (data.filtered || []).forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${escapeHtml(item.article.title)}</h3>
+          <div class="meta warn">${escapeHtml(item.reason)}</div>
+        `;
+        filtEl.appendChild(card);
+      });
+
+      if (data.truncated) {
+        setStatus("部分文章因 MAX_NOTIFICATIONS_PER_RUN 未顯示在發送列表");
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    async function fetchJson(url, opts) {
+      const res = await fetch(url, opts);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    async function loadPreview() {
+      setStatus("載入預覽中…");
+      try {
+        const data = await fetchJson("/api/preview");
+        renderPreview(data);
+        setStatus("預覽完成（未寫入資料庫）");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function runPipeline(dryRun) {
+      setStatus(dryRun ? "Dry run 執行中…" : "執行並發送中…");
+      try {
+        const data = await fetchJson("/api/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dryRun }),
+        });
+        renderPreview(data);
+        const sent = data.sent?.length ?? 0;
+        setStatus(
+          dryRun
+            ? `Dry run 完成（${data.wouldSend?.length ?? 0} 則預覽）`
+            : `完成：已發送 ${sent} 則${data.errors?.length ? "，錯誤見主控台" : ""}`,
+        );
+        if (data.errors?.length) console.error(data.errors);
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function postSend(body) {
+      setStatus("發送中…");
+      try {
+        await fetchJson("/api/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        setStatus("已發送到 Discord");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    async function testWebhook() {
+      setStatus("測試 webhook…");
+      try {
+        await fetchJson("/api/test-webhook", { method: "POST", body: "{}" });
+        setStatus("測試訊息已發送");
+      } catch (e) {
+        setStatus(e.message, true);
+      }
+    }
+
+    $("btnPreview").onclick = loadPreview;
+    $("btnDryRun").onclick = () => runPipeline(true);
+    $("btnRun").onclick = () => {
+      if (!confirm("確定要發送到 Discord？")) return;
+      runPipeline(false);
+    };
+    $("btnTestWebhook").onclick = testWebhook;
+  </script>
+</body>
+</html>

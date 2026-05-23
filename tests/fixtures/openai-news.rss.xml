@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>OpenAI News</title>
+    <item>
+      <title>Work with Codex from anywhere</title>
+      <link>https://openai.com/index/work-with-codex-from-anywhere</link>
+      <pubDate>Wed, 14 May 2026 00:00:00 GMT</pubDate>
+      <category>Product</category>
+    </item>
+    <item>
+      <title>OpenAI and Dell Technologies partner to bring Codex to enterprise</title>
+      <link>https://openai.com/index/dell-codex-enterprise-partnership</link>
+      <pubDate>Sun, 18 May 2026 00:00:00 GMT</pubDate>
+      <category>Company</category>
+    </item>
+    <item>
+      <title>Building a safe, effective sandbox to enable Codex on Windows</title>
+      <link>https://openai.com/index/building-codex-windows-sandbox</link>
+      <pubDate>Tue, 13 May 2026 00:00:00 GMT</pubDate>
+      <category>Engineering</category>
+    </item>
+  </channel>
+</rss>
