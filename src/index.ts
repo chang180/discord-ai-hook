@@ -22,6 +22,13 @@ async function main(): Promise<void> {
   const scheduleJob = async (): Promise<void> => {
     console.log(`[watcher] Running scheduled job at ${new Date().toISOString()}`);
     try {
+      const { deleted } = repo.pruneOldArticles(config.ARTICLE_RETENTION_DAYS);
+      if (deleted > 0) {
+        console.log(
+          `[watcher] Pruned ${deleted} article(s) older than ${config.ARTICLE_RETENTION_DAYS} days`,
+        );
+      }
+
       const result = await runWatcher({ config, repo }, { dryRun: config.DRY_RUN });
       console.log(
         `[watcher] Done. wouldSend=${result.wouldSend.length} sent=${result.sent.length} errors=${result.errors.length}`,

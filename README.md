@@ -10,7 +10,7 @@
 - 關鍵字過濾，避免合作案、投資等洗版內容
 - Discord Webhook 單向推送（無 Bot Gateway）
 - 本機測試頁：**預覽與 Discord 完全相同的 `content`**
-- SQLite 去重，每日排程（預設 20:00 `Asia/Taipei`）
+- SQLite 去重，每日排程（預設 20:00 `Asia/Taipei`），自動清理 30 天前紀錄
 
 ## Quick Start
 

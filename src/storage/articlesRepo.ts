@@ -97,6 +97,26 @@ export class ArticlesRepo {
     this.setMeta("last_run_error", error ?? "");
   }
 
+  /** Remove articles first seen before the retention window (frees SQLite space). */
+  deleteArticlesOlderThanDays(days: number): number {
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - days);
+    const cutoffIso = cutoff.toISOString();
+    const result = this.db
+      .prepare(`DELETE FROM articles WHERE first_seen_at < @cutoff`)
+      .run({ cutoff: cutoffIso });
+    return result.changes;
+  }
+
+  /** Daily maintenance: prune old rows and compact the database file. */
+  pruneOldArticles(retentionDays: number): { deleted: number } {
+    const deleted = this.deleteArticlesOlderThanDays(retentionDays);
+    if (deleted > 0) {
+      this.db.exec("VACUUM");
+    }
+    return { deleted };
+  }
+
   private getMeta(key: string): string | null {
     const row = this.db
       .prepare(`SELECT value FROM watcher_meta WHERE key = @key`)

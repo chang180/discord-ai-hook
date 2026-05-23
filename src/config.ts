@@ -19,6 +19,7 @@ const envSchema = z.object({
     .default("true")
     .transform((v) => v === "true"),
   DATABASE_PATH: z.string().default("./data/watcher.db"),
+  ARTICLE_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
   HTTP_USER_AGENT: z
     .string()
     .default("Mozilla/5.0 (compatible; DiscordAILabsWatcher/1.0)"),

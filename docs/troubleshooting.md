@@ -24,3 +24,9 @@
 ## Anthropic 解析失敗
 
 官網 HTML 改版時更新 `src/fetchers/anthropicHtml.ts` 與 `tests/fixtures/`。
+
+## SQLite 檔案太大
+
+- 確認定時任務有跑（`pm2 logs` 應見 `Pruned N article(s)`）
+- 調低 `ARTICLE_RETENTION_DAYS`（例如 `14`）
+- 手動：`sqlite3 data/watcher.db "VACUUM;"`

@@ -3,11 +3,12 @@
 ## 流程
 
 1. `node-cron` 依 `CRON_SCHEDULE` 觸發（預設每日 20:00）
-2. `fetchAllArticles` 抓取 OpenAI RSS、Anthropic HTML
-3. SQLite 記錄已見文章，跳過已發送
-4. `evaluateArticle` 過濾
-5. `formatMessage` 產生 Discord `content`
-6. `sendWebhook` POST 至 Discord（或 dry-run）
+2. `pruneOldArticles` 刪除超過 `ARTICLE_RETENTION_DAYS` 的 SQLite 紀錄並 `VACUUM`
+3. `fetchAllArticles` 抓取 OpenAI RSS、Anthropic HTML
+4. SQLite 記錄已見文章，跳過已發送
+5. `evaluateArticle` 過濾
+6. `formatMessage` 產生 Discord `content`
+7. `sendWebhook` POST 至 Discord（或 dry-run）
 
 本機開發可透過 Express 測試頁手動觸發 `/api/preview`、`/api/run`。
 
