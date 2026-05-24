@@ -64,7 +64,7 @@
     .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem; }
     .meta.warn { color: var(--warn); }
     .meta.danger { color: var(--danger); }
-    pre.discord-preview {
+    .discord-preview {
       background: #313338;
       border-radius: 6px;
       padding: 0.75rem 1rem;
@@ -75,6 +75,12 @@
       margin: 0.5rem 0;
       border-left: 3px solid var(--accent);
     }
+    .discord-preview .msg-subtext {
+      display: block;
+      color: #949ba4;
+      font-size: 0.75rem;
+      margin-top: 0.35rem;
+    }
     .empty { color: var(--muted); font-style: italic; font-size: 0.9rem; }
     .filtered-section { margin-top: 0.5rem; }
     details { margin-top: 0.5rem; }
@@ -83,7 +89,7 @@
 </head>
 <body>
   <h1>Discord AI Labs Watcher</h1>
-  <p class="sub">依來源分區預覽 — 每來源最多 3 則（與 Discord 實際 <code>content</code> 相同）</p>
+  <p class="sub">依來源分區預覽 — 每來源最多 3 則；開頭留白 + 結尾 <code>-#</code> 小字尾註（無連結 embed）</p>
 
   <div class="toolbar">
     <button type="button" id="btnPreview">載入預覽</button>
@@ -113,6 +119,18 @@
       return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
+    function formatDiscordPreviewHtml(content) {
+      return content
+        .split("\n")
+        .map((line) => {
+          if (line.startsWith("-#")) {
+            return `<span class="msg-subtext">${escapeHtml(line.slice(2).trimStart())}</span>`;
+          }
+          return escapeHtml(line);
+        })
+        .join("\n");
+    }
+
     function renderMessageCard(item, showSend) {
       const len = item.content.length;
       const over = len > 2000;
@@ -121,7 +139,7 @@
       card.innerHTML = `
         <h4>${escapeHtml(item.article.title)}</h4>
         <div class="meta">${escapeHtml(item.article.source)} · ${len} 字元${over ? ' · <span class="danger">超過 2000</span>' : ""}</div>
-        <pre class="discord-preview">${escapeHtml(item.content)}</pre>
+        <div class="discord-preview">${formatDiscordPreviewHtml(item.content)}</div>
         <button type="button" class="secondary btn-copy">複製 content</button>
       `;
       card.querySelector(".btn-copy").onclick = () => {

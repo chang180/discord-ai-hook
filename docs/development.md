@@ -25,7 +25,8 @@ npm run dev
 
 - 來源標籤、標題、原文連結
 - URL 以 `<https://...>` 包住（避免 Discord 自動展開連結預覽）
-- 結尾 **2 行空白**，讓連續多則訊息較易區分
+- 開頭 **2 行空白**（與上一則拉開；避免裝飾線緊貼上一則 embed）
+- 結尾 **`-# · · ·`** 小字尾註（Discord subtext，輕量收尾）
 
 發送時 [`sendWebhook`](../src/discord/sendWebhook.ts) 預設帶 `SUPPRESS_EMBEDS`（`flags: 4`），關閉大型 embed 卡片，避免多則訊息視覺上黏在一起。
 

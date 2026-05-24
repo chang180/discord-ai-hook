@@ -9,7 +9,8 @@
 - 定時抓取 OpenAI RSS、Anthropic News / Engineering
 - 關鍵字過濾，避免合作案、投資等洗版內容
 - Discord Webhook 單向推送（無 Bot Gateway）
-- 本機測試頁：**預覽與 Discord 完全相同的 `content`**（無連結 embed、訊息間留白）
+- Discord 推送：自動關閉連結預覽（`SUPPRESS_EMBEDS` + `<URL>`），開頭留白與 `-#` 小字尾註
+- 本機測試頁：預覽與實際發送相同的 `content`（依消息源分區）
 - SQLite 去重；**三消息源各 3 則/輪**（OpenAI、Anthropic News、Engineering）
 - 每日排程（預設 20:00 `Asia/Taipei`），自動清理 30 天前紀錄
 
