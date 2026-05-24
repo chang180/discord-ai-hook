@@ -49,7 +49,7 @@ async function main(): Promise<void> {
 
   const perSource = getPerSourceLimit(config);
   console.log(
-    `Watcher scheduled: "${config.CRON_SCHEDULE}" (${config.TZ}), ${perSource}/source × ${contentSources.length} sources (max ${perSource * contentSources.length}/run)`,
+    `Watcher scheduled: "${config.CRON_SCHEDULE}" (${config.TZ}), ${perSource}/source × ${contentSources.length} sources (max ${perSource * contentSources.length}/run), lookback ${config.ARTICLE_LOOKBACK_DAYS} day(s)`,
   );
 }
 

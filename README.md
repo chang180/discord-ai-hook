@@ -12,7 +12,8 @@
 - Discord 推送：自動關閉連結預覽（`SUPPRESS_EMBEDS` + `<URL>`），開頭留白與 `-#` 小字尾註
 - 本機測試頁：預覽與實際發送相同的 `content`（依消息源分區）
 - SQLite 去重；**三消息源各 3 則/輪**（OpenAI、Anthropic News、Engineering）
-- 每日排程（預設 20:00 `Asia/Taipei`），自動清理 30 天前紀錄
+- 每日排程（預設 20:00 `Asia/Taipei`）；`ARTICLE_LOOKBACK_DAYS=1` 預設只抓**昨天**（台北日曆日）發布
+- 自動清理 30 天前 SQLite 紀錄
 
 ## Quick Start
 

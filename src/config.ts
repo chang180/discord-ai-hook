@@ -1,5 +1,6 @@
 import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
+import type { SourceRunContext } from "./sources/types.js";
 
 loadDotenv();
 
@@ -21,6 +22,8 @@ const envSchema = z.object({
     .transform((v) => v === "true"),
   DATABASE_PATH: z.string().default("./data/watcher.db"),
   ARTICLE_RETENTION_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  /** 0 = 不限制；N = 只處理 TZ「今天之前」連續 N 個日曆日（1=僅昨天） */
+  ARTICLE_LOOKBACK_DAYS: z.coerce.number().int().min(0).max(365).default(1),
   HTTP_USER_AGENT: z
     .string()
     .default("Mozilla/5.0 (compatible; DiscordAILabsWatcher/1.0)"),
@@ -59,4 +62,20 @@ export function resetConfigCache(): void {
 
 export function hasWebhook(config: AppConfig): boolean {
   return Boolean(config.DISCORD_WEBHOOK_URL && config.DISCORD_WEBHOOK_URL.length > 0);
+}
+
+export function buildSourceRunContext(
+  config: AppConfig,
+  partial: Partial<
+    Pick<SourceRunContext, "fetchImpl" | "fixtures" | "perSourceLimit">
+  > = {},
+): SourceRunContext {
+  return {
+    userAgent: config.HTTP_USER_AGENT,
+    perSourceLimit: partial.perSourceLimit ?? getPerSourceLimit(config),
+    articleLookbackDays: config.ARTICLE_LOOKBACK_DAYS,
+    timeZone: config.TZ,
+    fetchImpl: partial.fetchImpl,
+    fixtures: partial.fixtures,
+  };
 }

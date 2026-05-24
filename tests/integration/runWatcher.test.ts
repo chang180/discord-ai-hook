@@ -10,6 +10,7 @@ describe("runWatcher integration", () => {
     process.env.DISCORD_WEBHOOK_URL = "";
     process.env.DRY_RUN = "true";
     process.env.MAX_NOTIFICATIONS_PER_SOURCE = "3";
+    process.env.ARTICLE_LOOKBACK_DAYS = "0";
     const config = loadConfig();
     const repo = createTestRepo();
 

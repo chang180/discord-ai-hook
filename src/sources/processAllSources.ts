@@ -6,6 +6,7 @@ import type {
   SourcePreviewSlice,
 } from "../types.js";
 import type { ContentSource, SourceRunContext } from "./types.js";
+import { partitionByLookbackWindow } from "../filters/dateWindow.js";
 import { contentSources } from "./registry.js";
 import { resolveFormatMessage } from "./shared.js";
 
@@ -68,10 +69,15 @@ export async function processAllSources(
   for (const source of sources) {
     const raw = await source.fetch(ctx);
     const ordered = source.orderArticles(raw);
+    const { inWindow, outOfWindow } = partitionByLookbackWindow(
+      ordered,
+      ctx.articleLookbackDays,
+      ctx.timeZone,
+    );
     const limit = source.getMaxPerRun?.(ctx) ?? ctx.perSourceLimit;
 
     const slice = buildPreviewSlice({
-      articles: ordered,
+      articles: inWindow,
       maxNotifications: limit,
       skipUrls,
       evaluate: (a) => source.evaluate(a),
@@ -81,7 +87,10 @@ export async function processAllSources(
     bySource.push({
       source: source.id,
       label: source.label,
-      ...slice,
+      wouldSend: slice.wouldSend,
+      filtered: [...outOfWindow, ...slice.filtered],
+      truncated: slice.truncated,
+      passedCount: slice.passedCount,
     });
   }
 

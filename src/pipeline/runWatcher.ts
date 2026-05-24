@@ -1,5 +1,5 @@
 import type { AppConfig } from "../config.js";
-import { hasWebhook, getPerSourceLimit } from "../config.js";
+import { hasWebhook, buildSourceRunContext } from "../config.js";
 import type { WatcherResult, PreviewResult, ArticleSource } from "../types.js";
 import { processAllSources, fetchAllFromSources } from "../sources/processAllSources.js";
 import type { SourceRunContext } from "../sources/types.js";
@@ -35,12 +35,10 @@ function buildSourceContext(deps: RunWatcherDeps): SourceRunContext {
     fixtures.anthropic_engineering = deps.anthropicEngineeringHtml;
   }
 
-  return {
-    userAgent: deps.config.HTTP_USER_AGENT,
+  return buildSourceRunContext(deps.config, {
     fetchImpl: deps.fetchImpl,
     fixtures: Object.keys(fixtures).length > 0 ? fixtures : undefined,
-    perSourceLimit: getPerSourceLimit(deps.config),
-  };
+  });
 }
 
 export async function runWatcher(

@@ -12,6 +12,8 @@ export interface FetchAllOptions {
   anthropicNewsHtml?: string;
   anthropicEngineeringHtml?: string;
   perSourceLimit?: number;
+  articleLookbackDays?: number;
+  timeZone?: string;
 }
 
 function toSourceContext(options: FetchAllOptions): SourceRunContext {
@@ -27,6 +29,8 @@ function toSourceContext(options: FetchAllOptions): SourceRunContext {
     fetchImpl: options.fetchImpl,
     fixtures: Object.keys(fixtures).length > 0 ? fixtures : undefined,
     perSourceLimit: options.perSourceLimit ?? 3,
+    articleLookbackDays: options.articleLookbackDays ?? 0,
+    timeZone: options.timeZone ?? "UTC",
   };
 }
 

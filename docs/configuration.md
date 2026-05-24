@@ -14,7 +14,8 @@
 | `HOST` | 綁定位址（建議本機 `127.0.0.1`） | `127.0.0.1` |
 | `ENABLE_TEST_UI` | 是否啟用測試頁 | `true` |
 | `DATABASE_PATH` | SQLite 路徑 | `./data/watcher.db` |
-| `ARTICLE_RETENTION_DAYS` | 定時任務刪除幾天前的文章紀錄 | `30` |
+| `ARTICLE_RETENTION_DAYS` | 定時任務刪除幾天前的 SQLite 紀錄（與查詢窗口無關） | `30` |
+| `ARTICLE_LOOKBACK_DAYS` | 只處理 `TZ` **昨天起**連續 N 個日曆日（不含今天）；`1` = 僅昨天；`0` = 不限制 | `1` |
 | `HTTP_USER_AGENT` | 抓取時 User-Agent | 見 `.env.example` |
 
 **切勿**將 `.env` 提交至 git。

@@ -39,7 +39,12 @@ describe("processAllSources", () => {
     };
 
     const result = await processAllSources({
-      ctx: { userAgent: "test", perSourceLimit: 3 },
+      ctx: {
+        userAgent: "test",
+        perSourceLimit: 3,
+        articleLookbackDays: 0,
+        timeZone: "UTC",
+      },
       sources: [mockOpenAi, mockEng],
     });
 
@@ -63,6 +68,8 @@ describe("processAllSources", () => {
       ctx: {
         userAgent: "test",
         perSourceLimit: 3,
+        articleLookbackDays: 0,
+        timeZone: "UTC",
         fixtures: {
           openai: openaiXml,
           anthropic_news: loadFixture("anthropic-news.html"),
