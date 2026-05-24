@@ -31,7 +31,7 @@
 |----|------|----------|
 | `openai` | `openaiSource.ts` | exclude + Company 規則 + include |
 | `anthropic_news` | `anthropicNewsSource.ts` | exclude + include |
-| `anthropic_engineering` | `anthropicEngineeringSource.ts` | exclude 後預設通過 |
+| `anthropic_engineering` | `anthropicEngineeringSource.ts` | exclude + lookback 日期窗口（頁面有日期的文章）；Featured 置頂文章無日期，視同新文通過 |
 
 ## 配額
 

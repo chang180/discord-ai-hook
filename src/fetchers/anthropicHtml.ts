@@ -122,11 +122,14 @@ export function parseAnthropicEngineeringHtml(html: string): Article[] {
       title = slug.charAt(0).toUpperCase() + slug.slice(1);
     }
 
+    const dateText = $(el).find('[class*="__date"]').first().text().trim();
+    const publishedAt = dateText ? parseAnthropicDate(dateText) : null;
+
     articles.push({
       url,
       title,
       source: "anthropic_engineering",
-      publishedAt: null,
+      publishedAt,
       category: "Engineering",
     });
   });
