@@ -1,14 +1,25 @@
+/** Discord MessageFlags.SUPPRESS_EMBEDS — 不顯示連結預覽卡片 */
+export const SUPPRESS_EMBEDS_FLAG = 1 << 2;
+
 export interface SendWebhookOptions {
   webhookUrl: string;
   content: string;
   dryRun: boolean;
   fetchImpl?: typeof fetch;
+  /** 預設 true：避免多則訊息因 embed 視覺上黏在一起 */
+  suppressEmbeds?: boolean;
 }
 
 export async function sendWebhook(
   options: SendWebhookOptions,
 ): Promise<{ sent: boolean; dryRun: boolean }> {
-  const { webhookUrl, content, dryRun, fetchImpl = fetch } = options;
+  const {
+    webhookUrl,
+    content,
+    dryRun,
+    fetchImpl = fetch,
+    suppressEmbeds = true,
+  } = options;
 
   if (dryRun) {
     return { sent: false, dryRun: true };
@@ -24,7 +35,10 @@ export async function sendWebhook(
       const res = await fetchImpl(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({
+          content,
+          ...(suppressEmbeds ? { flags: SUPPRESS_EMBEDS_FLAG } : {}),
+        }),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");

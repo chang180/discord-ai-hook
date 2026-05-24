@@ -18,6 +18,8 @@ partnership、partners、acquires、acquisition、KPMG、PwC、Gates Foundation�
 
 ## 速率
 
-`MAX_NOTIFICATIONS_PER_RUN` 限制每輪發送數量。
+`MAX_NOTIFICATIONS_PER_SOURCE` 限制**每個消息源**每輪發送數量（預設 3）。
 
-調整關鍵字：編輯 `src/filters/keywordInclude.ts`、`keywordExclude.ts`。
+各來源專屬規則：見 `src/sources/openaiSource.ts`、`anthropicNewsSource.ts`、`anthropicEngineeringSource.ts`。
+
+共用關鍵字：編輯 `src/filters/keywordInclude.ts`、`keywordExclude.ts`。

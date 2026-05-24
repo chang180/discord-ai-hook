@@ -1,5 +1,6 @@
 import cron from "node-cron";
-import { loadConfig } from "./config.js";
+import { loadConfig, getPerSourceLimit } from "./config.js";
+import { contentSources } from "./sources/registry.js";
 import { openDatabase } from "./storage/db.js";
 import { ArticlesRepo } from "./storage/articlesRepo.js";
 import { createApp } from "./server/app.js";
@@ -46,8 +47,9 @@ async function main(): Promise<void> {
     timezone: config.TZ,
   });
 
+  const perSource = getPerSourceLimit(config);
   console.log(
-    `Watcher scheduled: "${config.CRON_SCHEDULE}" (${config.TZ}), max ${config.MAX_NOTIFICATIONS_PER_RUN}/run`,
+    `Watcher scheduled: "${config.CRON_SCHEDULE}" (${config.TZ}), ${perSource}/source × ${contentSources.length} sources (max ${perSource * contentSources.length}/run)`,
   );
 }
 

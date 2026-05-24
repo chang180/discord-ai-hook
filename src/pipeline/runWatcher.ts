@@ -1,17 +1,20 @@
 import type { AppConfig } from "../config.js";
-import { hasWebhook } from "../config.js";
-import type { WatcherResult, PreviewResult } from "../types.js";
-import { fetchAllArticles } from "../fetchers/fetchAllArticles.js";
-import { buildPreview } from "./buildPreview.js";
+import { hasWebhook, getPerSourceLimit } from "../config.js";
+import type { WatcherResult, PreviewResult, ArticleSource } from "../types.js";
+import { processAllSources, fetchAllFromSources } from "../sources/processAllSources.js";
+import type { SourceRunContext } from "../sources/types.js";
 import { sendWebhook } from "../discord/sendWebhook.js";
 import { ArticlesRepo } from "../storage/articlesRepo.js";
-import { evaluateArticle } from "../filters/evaluateArticle.js";
-import { formatMessage } from "../discord/formatMessage.js";
+import { getSourceById } from "../sources/registry.js";
+import { resolveFormatMessage } from "../sources/shared.js";
+import type { Article } from "../types.js";
 
 export interface RunWatcherDeps {
   config: AppConfig;
   repo: ArticlesRepo;
   fetchImpl?: typeof fetch;
+  fixtures?: Partial<Record<ArticleSource, string>>;
+  /** @deprecated use fixtures */
   openAiXml?: string;
   anthropicNewsHtml?: string;
   anthropicEngineeringHtml?: string;
@@ -22,6 +25,24 @@ export interface RunWatcherOptions {
   persist?: boolean;
 }
 
+function buildSourceContext(deps: RunWatcherDeps): SourceRunContext {
+  const fixtures: Partial<Record<ArticleSource, string>> = {
+    ...deps.fixtures,
+  };
+  if (deps.openAiXml) fixtures.openai = deps.openAiXml;
+  if (deps.anthropicNewsHtml) fixtures.anthropic_news = deps.anthropicNewsHtml;
+  if (deps.anthropicEngineeringHtml) {
+    fixtures.anthropic_engineering = deps.anthropicEngineeringHtml;
+  }
+
+  return {
+    userAgent: deps.config.HTTP_USER_AGENT,
+    fetchImpl: deps.fetchImpl,
+    fixtures: Object.keys(fixtures).length > 0 ? fixtures : undefined,
+    perSourceLimit: getPerSourceLimit(deps.config),
+  };
+}
+
 export async function runWatcher(
   deps: RunWatcherDeps,
   options: RunWatcherOptions = {},
@@ -30,16 +51,11 @@ export async function runWatcher(
   const persist = options.persist ?? true;
   const errors: string[] = [];
   const sent: PreviewResult["wouldSend"] = [];
+  const ctx = buildSourceContext(deps);
 
-  let articles;
+  let articles: Article[];
   try {
-    articles = await fetchAllArticles({
-      userAgent: deps.config.HTTP_USER_AGENT,
-      fetchImpl: deps.fetchImpl,
-      openAiXml: deps.openAiXml,
-      anthropicNewsHtml: deps.anthropicNewsHtml,
-      anthropicEngineeringHtml: deps.anthropicEngineeringHtml,
-    });
+    articles = await fetchAllFromSources(ctx);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (persist) deps.repo.setLastRun(new Date().toISOString(), msg);
@@ -56,11 +72,7 @@ export async function runWatcher(
     }
   }
 
-  const preview = buildPreview({
-    articles,
-    maxNotifications: deps.config.MAX_NOTIFICATIONS_PER_RUN,
-    skipUrls,
-  });
+  const preview = await processAllSources({ ctx, skipUrls });
 
   if (persist) {
     for (const { article, reason } of preview.filtered) {
@@ -87,9 +99,7 @@ export async function runWatcher(
         });
         if (persist) deps.repo.markSent(item.article.url);
         sent.push(item);
-      } else if (dryRun) {
-        // preview only
-      } else if (!hasWebhook(deps.config)) {
+      } else if (!hasWebhook(deps.config) && !dryRun) {
         errors.push(`Skipped send (no webhook): ${item.article.title}`);
       }
     } catch (err) {
@@ -112,30 +122,18 @@ export async function runWatcher(
   };
 }
 
-export async function previewOnly(
-  deps: RunWatcherDeps,
-): Promise<PreviewResult> {
-  const articles = await fetchAllArticles({
-    userAgent: deps.config.HTTP_USER_AGENT,
-    fetchImpl: deps.fetchImpl,
-    openAiXml: deps.openAiXml,
-    anthropicNewsHtml: deps.anthropicNewsHtml,
-    anthropicEngineeringHtml: deps.anthropicEngineeringHtml,
-  });
-
-  return buildPreview({
-    articles,
-    maxNotifications: deps.config.MAX_NOTIFICATIONS_PER_RUN,
-  });
+export async function previewOnly(deps: RunWatcherDeps): Promise<PreviewResult> {
+  return processAllSources({ ctx: buildSourceContext(deps) });
 }
 
 export function formatArticleByUrl(
-  articles: import("../types.js").Article[],
+  articles: Article[],
   url: string,
 ): string | null {
   const article = articles.find((a) => a.url === url);
   if (!article) return null;
-  const result = evaluateArticle(article);
+  const source = getSourceById(article.source);
+  const result = source.evaluate(article);
   if (!result.pass) return null;
-  return formatMessage(article);
+  return resolveFormatMessage(source, article);
 }

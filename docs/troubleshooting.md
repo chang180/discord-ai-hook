@@ -8,13 +8,17 @@
 
 - 檢查 `DISCORD_WEBHOOK_URL` 是否正確
 - 訊息是否超過 2000 字元
-- 使用測試頁「Webhook 連線測試」
+- 使用 `POST /api/test-webhook` 或 `POST /api/send` 測試
+
+## 多則訊息看起來黏在一起
+
+預設已關閉連結 embed（`SUPPRESS_EMBEDS`）並在 URL 使用 `<...>`。若仍看到大圖預覽，確認執行的是最新版程式。
 
 ## 沒收到通知
 
 - 文章可能被 filter 擋下（測試頁「已過濾」區）
 - 是否已 `sent_at`（去重）
-- 是否超過 `MAX_NOTIFICATIONS_PER_RUN`
+- 是否超過 `MAX_NOTIFICATIONS_PER_SOURCE`（每來源獨立配額）
 - `DRY_RUN` 是否為 `true`
 
 ## cron 時間不對

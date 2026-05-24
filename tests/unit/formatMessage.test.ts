@@ -26,7 +26,9 @@ describe("formatMessage", () => {
       標題：Harness design for long-running application development
 
       原文：
-      https://www.anthropic.com/engineering/harness-design"
+      <https://www.anthropic.com/engineering/harness-design>
+
+      "
     `);
   });
 });

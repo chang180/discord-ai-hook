@@ -11,7 +11,8 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("false")
     .transform((v) => v === "true"),
-  MAX_NOTIFICATIONS_PER_RUN: z.coerce.number().int().min(1).max(50).default(3),
+  MAX_NOTIFICATIONS_PER_SOURCE: z.coerce.number().int().min(1).max(50).default(3),
+  MAX_NOTIFICATIONS_PER_RUN: z.coerce.number().int().min(1).max(50).optional(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   HOST: z.string().default("127.0.0.1"),
   ENABLE_TEST_UI: z
@@ -37,8 +38,19 @@ export function loadConfig(): AppConfig {
       `Invalid environment: ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")}`,
     );
   }
-  cached = parsed.data;
+  const data = parsed.data;
+  if (
+    data.MAX_NOTIFICATIONS_PER_RUN !== undefined &&
+    process.env.MAX_NOTIFICATIONS_PER_SOURCE === undefined
+  ) {
+    data.MAX_NOTIFICATIONS_PER_SOURCE = data.MAX_NOTIFICATIONS_PER_RUN;
+  }
+  cached = data;
   return cached;
+}
+
+export function getPerSourceLimit(config: AppConfig): number {
+  return config.MAX_NOTIFICATIONS_PER_SOURCE;
 }
 
 export function resetConfigCache(): void {

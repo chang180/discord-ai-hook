@@ -2,8 +2,8 @@ import * as cheerio from "cheerio";
 import type { Article, ArticleSource } from "../types.js";
 
 const ANTHROPIC_BASE = "https://www.anthropic.com";
-const NEWS_URL = `${ANTHROPIC_BASE}/news`;
-const ENGINEERING_URL = `${ANTHROPIC_BASE}/engineering`;
+export const NEWS_URL = `${ANTHROPIC_BASE}/news`;
+export const ENGINEERING_URL = `${ANTHROPIC_BASE}/engineering`;
 
 export interface AnthropicHtmlOptions {
   userAgent: string;
@@ -17,10 +17,58 @@ function absoluteUrl(href: string): string {
   return `${ANTHROPIC_BASE}${href.startsWith("/") ? href : `/${href}`}`;
 }
 
+function pushNewsArticle(
+  articles: Article[],
+  seen: Set<string>,
+  url: string,
+  title: string,
+  publishedAt: string | null,
+  category: string | null,
+): void {
+  if (!title || seen.has(url)) return;
+  seen.add(url);
+  articles.push({
+    url,
+    title,
+    source: "anthropic_news",
+    publishedAt,
+    category,
+  });
+}
+
 export function parseAnthropicNewsHtml(html: string): Article[] {
   const $ = cheerio.load(html);
   const articles: Article[] = [];
   const seen = new Set<string>();
+
+  $('a[href^="/news/"]').each((_, el) => {
+    const anchor = $(el);
+    const href = anchor.attr("href");
+    if (!href) return;
+
+    const url = absoluteUrl(href);
+    const title =
+      anchor.find("h2, h3, h4, .headline-4, .headline-6").first().text().trim() ||
+      anchor.find(".FeaturedGrid-module-scss-module__W1FydW__title").text().trim() ||
+      anchor.find(".FeaturedGrid-module-scss-module__W1FydW__featuredTitle").text().trim() ||
+      "";
+    const dateText = anchor.find("time").first().text().trim();
+    const category =
+      anchor.find(".FeaturedGrid-module-scss-module__W1FydW__meta .caption").first().text().trim() ||
+      anchor.find(".caption.bold").first().text().trim() ||
+      "";
+
+    if (title) {
+      pushNewsArticle(
+        articles,
+        seen,
+        url,
+        title,
+        dateText ? parseAnthropicDate(dateText) : null,
+        category || null,
+      );
+    }
+  });
 
   $("a.PublicationList-module-scss-module__KxYrHG__listItem").each((_, el) => {
     const anchor = $(el);
@@ -28,32 +76,24 @@ export function parseAnthropicNewsHtml(html: string): Article[] {
     if (!href || !href.startsWith("/news/")) return;
 
     const url = absoluteUrl(href);
-    if (seen.has(url)) return;
-    seen.add(url);
-
     const title = anchor
       .find(".PublicationList-module-scss-module__KxYrHG__title")
       .text()
       .trim();
-    const dateText = anchor
-      .find("time")
-      .first()
-      .text()
-      .trim();
+    const dateText = anchor.find("time").first().text().trim();
     const category = anchor
       .find(".PublicationList-module-scss-module__KxYrHG__subject")
       .text()
       .trim();
 
-    if (!title) return;
-
-    articles.push({
+    pushNewsArticle(
+      articles,
+      seen,
       url,
       title,
-      source: "anthropic_news",
-      publishedAt: dateText ? parseAnthropicDate(dateText) : null,
-      category: category || null,
-    });
+      dateText ? parseAnthropicDate(dateText) : null,
+      category || null,
+    );
   });
 
   return articles;

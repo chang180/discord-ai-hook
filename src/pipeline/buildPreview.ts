@@ -1,6 +1,13 @@
-import type { Article, PreviewResult, FormattedMessage } from "../types.js";
+import type { Article, PreviewResult } from "../types.js";
 import { evaluateArticle } from "../filters/evaluateArticle.js";
 import { formatMessage } from "../discord/formatMessage.js";
+import {
+  buildPreviewSlice,
+  processAllSources,
+} from "../sources/processAllSources.js";
+import type { SourceRunContext } from "../sources/types.js";
+
+export { buildPreviewSlice, processAllSources };
 
 export interface BuildPreviewOptions {
   articles: Article[];
@@ -8,37 +15,27 @@ export interface BuildPreviewOptions {
   skipUrls?: Set<string>;
 }
 
+/** @deprecated Use processAllSources for multi-source pipelines */
 export function buildPreview(options: BuildPreviewOptions): PreviewResult {
-  const { articles, maxNotifications, skipUrls = new Set() } = options;
-
-  const wouldSend: FormattedMessage[] = [];
-  const filtered: { article: Article; reason: string }[] = [];
-
-  for (const article of articles) {
-    if (skipUrls.has(article.url)) continue;
-
-    const result = evaluateArticle(article);
-    if (!result.pass) {
-      filtered.push({ article, reason: result.reason ?? "filtered" });
-      continue;
-    }
-
-    if (wouldSend.length < maxNotifications) {
-      wouldSend.push({
-        article,
-        content: formatMessage(article),
-      });
-    }
-  }
-
-  const passedCount = articles.filter((a) => {
-    if (skipUrls.has(a.url)) return false;
-    return evaluateArticle(a).pass;
-  }).length;
+  const slice = buildPreviewSlice({
+    articles: options.articles,
+    maxNotifications: options.maxNotifications,
+    skipUrls: options.skipUrls,
+    evaluate: evaluateArticle,
+    format: formatMessage,
+  });
 
   return {
-    wouldSend,
-    filtered,
-    truncated: passedCount > wouldSend.length,
+    wouldSend: slice.wouldSend,
+    filtered: slice.filtered,
+    truncated: slice.truncated,
+    bySource: [],
   };
+}
+
+export function buildPreviewFromContext(
+  ctx: SourceRunContext,
+  skipUrls?: Set<string>,
+): Promise<PreviewResult> {
+  return processAllSources({ ctx, skipUrls });
 }

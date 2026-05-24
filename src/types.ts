@@ -21,10 +21,20 @@ export interface FormattedMessage {
   content: string;
 }
 
+export interface SourcePreviewSlice {
+  source: ArticleSource;
+  label: string;
+  wouldSend: FormattedMessage[];
+  filtered: { article: Article; reason: string }[];
+  truncated: boolean;
+  passedCount: number;
+}
+
 export interface PreviewResult {
   wouldSend: FormattedMessage[];
   filtered: { article: Article; reason: string }[];
   truncated: boolean;
+  bySource: SourcePreviewSlice[];
 }
 
 export interface WatcherResult extends PreviewResult {

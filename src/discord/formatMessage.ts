@@ -20,7 +20,9 @@ export function formatMessage(article: Article): string {
     `標題：${article.title}`,
     "",
     `原文：`,
-    article.url,
+    `<${article.url}>`,
+    "",
+    "",
   ];
   return lines.join("\n");
 }

@@ -1,5 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { sendWebhook } from "../../src/discord/sendWebhook.js";
+import {
+  sendWebhook,
+  SUPPRESS_EMBEDS_FLAG,
+} from "../../src/discord/sendWebhook.js";
 
 describe("sendWebhook", () => {
   it("does not fetch when dryRun", async () => {
@@ -14,7 +17,7 @@ describe("sendWebhook", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("posts to webhook on success", async () => {
+  it("posts to webhook on success with embed suppression", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, status: 204 });
     const result = await sendWebhook({
       webhookUrl: "https://discord.com/api/webhooks/x/y",
@@ -24,6 +27,10 @@ describe("sendWebhook", () => {
     });
     expect(result.sent).toBe(true);
     expect(fetchImpl).toHaveBeenCalledOnce();
+    const body = JSON.parse(
+      (fetchImpl.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(body).toEqual({ content: "hello", flags: SUPPRESS_EMBEDS_FLAG });
   });
 
   it("retries once on failure", async () => {

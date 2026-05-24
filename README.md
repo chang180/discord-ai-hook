@@ -9,8 +9,9 @@
 - 定時抓取 OpenAI RSS、Anthropic News / Engineering
 - 關鍵字過濾，避免合作案、投資等洗版內容
 - Discord Webhook 單向推送（無 Bot Gateway）
-- 本機測試頁：**預覽與 Discord 完全相同的 `content`**
-- SQLite 去重，每日排程（預設 20:00 `Asia/Taipei`），自動清理 30 天前紀錄
+- 本機測試頁：**預覽與 Discord 完全相同的 `content`**（無連結 embed、訊息間留白）
+- SQLite 去重；**三消息源各 3 則/輪**（OpenAI、Anthropic News、Engineering）
+- 每日排程（預設 20:00 `Asia/Taipei`），自動清理 30 天前紀錄
 
 ## Quick Start
 
@@ -39,6 +40,7 @@ npm run dev
 詳見 [docs/README.md](docs/README.md)。
 
 - [開發與 Discord 預覽](docs/development.md)
+- [消息源擴充](docs/sources.md)
 - [環境設定](docs/configuration.md)
 - [部署與 GitHub Actions](docs/deployment.md)
 - [測試](docs/testing.md)

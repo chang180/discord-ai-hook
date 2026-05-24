@@ -1,6 +1,9 @@
-import type { Article } from "../types.js";
-import { fetchOpenAiArticles } from "./openaiRss.js";
-import { fetchAnthropicArticles } from "./anthropicHtml.js";
+import type { Article, ArticleSource } from "../types.js";
+import {
+  fetchAllFromSources,
+  processAllSources,
+} from "../sources/processAllSources.js";
+import type { SourceRunContext } from "../sources/types.js";
 
 export interface FetchAllOptions {
   userAgent: string;
@@ -8,28 +11,37 @@ export interface FetchAllOptions {
   openAiXml?: string;
   anthropicNewsHtml?: string;
   anthropicEngineeringHtml?: string;
+  perSourceLimit?: number;
+}
+
+function toSourceContext(options: FetchAllOptions): SourceRunContext {
+  const fixtures: Partial<Record<ArticleSource, string>> = {};
+  if (options.openAiXml) fixtures.openai = options.openAiXml;
+  if (options.anthropicNewsHtml) fixtures.anthropic_news = options.anthropicNewsHtml;
+  if (options.anthropicEngineeringHtml) {
+    fixtures.anthropic_engineering = options.anthropicEngineeringHtml;
+  }
+
+  return {
+    userAgent: options.userAgent,
+    fetchImpl: options.fetchImpl,
+    fixtures: Object.keys(fixtures).length > 0 ? fixtures : undefined,
+    perSourceLimit: options.perSourceLimit ?? 3,
+  };
 }
 
 export async function fetchAllArticles(
   options: FetchAllOptions,
 ): Promise<Article[]> {
-  const [openai, anthropic] = await Promise.all([
-    fetchOpenAiArticles({
-      userAgent: options.userAgent,
-      fetchImpl: options.fetchImpl,
-      xml: options.openAiXml,
-    }),
-    fetchAnthropicArticles({
-      userAgent: options.userAgent,
-      fetchImpl: options.fetchImpl,
-      newsHtml: options.anthropicNewsHtml,
-      engineeringHtml: options.anthropicEngineeringHtml,
-    }),
-  ]);
+  return fetchAllFromSources(toSourceContext(options));
+}
 
-  const byUrl = new Map<string, Article>();
-  for (const a of [...openai, ...anthropic]) {
-    if (!byUrl.has(a.url)) byUrl.set(a.url, a);
-  }
-  return [...byUrl.values()];
+export async function fetchAndPreviewAll(
+  options: FetchAllOptions,
+  skipUrls?: Set<string>,
+) {
+  return processAllSources({
+    ctx: toSourceContext(options),
+    skipUrls,
+  });
 }
